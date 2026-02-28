@@ -9,7 +9,7 @@ import itertools
 import os
 import toml
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 # Obtain the extension data from the extension.toml file
 EXTENSION_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -28,6 +28,9 @@ PYTORCH_INDEX_URL = ["https://download.pytorch.org/whl/cu118"]
 EXTRAS_REQUIRE = {
     "rsl-rl": [
         "rsl-rl-lib @ git+https://github.com/zoctipus/rsl_rl.git@master",
+    ],
+    "sac-her": [
+        # SAC+HER uses only PyTorch (no external RL library needed)
     ],
 }
 
@@ -51,7 +54,7 @@ setup(
     install_requires=INSTALL_REQUIRES,
     dependency_links=PYTORCH_INDEX_URL,
     extras_require=EXTRAS_REQUIRE,
-    packages=["uwlab_rl"],
+    packages=find_packages(),
     classifiers=[
         "Natural Language :: English",
         "Programming Language :: Python :: 3.10",
