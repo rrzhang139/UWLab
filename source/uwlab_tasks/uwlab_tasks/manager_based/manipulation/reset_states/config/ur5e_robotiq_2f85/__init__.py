@@ -90,6 +90,7 @@ gym.register(
         "env_cfg_entry_point": f"{__name__}.rl_state_cfg:Ur5eRobotiq2f85RelCartesianOSCTrainCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_cfg:Base_PPORunnerCfg",
         "sac_her_cfg_entry_point": f"{agents.__name__}.sac_her_cfg:SacHerOmniResetCfg",
+        "skrl_sac_cfg_entry_point": f"{agents.__name__}.skrl_sac_cfg:SAC_RUNNER_CFG",
     },
 )
 
@@ -101,6 +102,7 @@ gym.register(
         "env_cfg_entry_point": f"{__name__}.rl_state_cfg:Ur5eRobotiq2f85RelCartesianOSCEvalCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_cfg:Base_PPORunnerCfg",
         "sac_her_cfg_entry_point": f"{agents.__name__}.sac_her_cfg:SacHerOmniResetCfg",
+        "skrl_sac_cfg_entry_point": f"{agents.__name__}.skrl_sac_cfg:SAC_RUNNER_CFG",
     },
 )
 
@@ -113,5 +115,6 @@ gym.register(
         "env_cfg_entry_point": f"{__name__}.rl_state_near_goal_cfg:Ur5eRobotiq2f85RelCartesianOSCNearGoalTrainCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_cfg:Base_PPORunnerCfg",
         "sac_her_cfg_entry_point": f"{agents.__name__}.sac_her_cfg:SacHerOmniResetCfg",
+        "skrl_sac_cfg_entry_point": f"{agents.__name__}.skrl_sac_cfg:SAC_RUNNER_CFG",
     },
 )

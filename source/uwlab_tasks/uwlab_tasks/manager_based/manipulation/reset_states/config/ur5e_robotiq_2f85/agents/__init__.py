@@ -5,3 +5,4 @@
 
 from . import rsl_rl_cfg
 from . import sac_her_cfg
+from . import skrl_sac_cfg
