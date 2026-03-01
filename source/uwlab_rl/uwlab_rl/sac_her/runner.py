@@ -100,9 +100,11 @@ class OffPolicyRunner:
         self._episode_rewards = torch.zeros(env.num_envs, device=self.device)
         self._episode_lengths = torch.zeros(env.num_envs, device=self.device)
         self._completed_episodes = 0
-        self._completed_successes = 0
         self._log_episode_rewards = []
         self._log_episode_lengths = []
+        # Real success metrics from env (populated by ProgressContext + MultiResetManager)
+        self._env_success_rate = 0.0
+        self._env_metrics: dict[str, float] = {}
 
     def _setup_logger(self):
         """Initialize W&B or tensorboard logger."""
@@ -203,14 +205,19 @@ class OffPolicyRunner:
                 self._log_episode_rewards.extend(self._episode_rewards[done_mask].cpu().tolist())
                 self._log_episode_lengths.extend(self._episode_lengths[done_mask].cpu().tolist())
                 self._completed_episodes += int(n_done)
-
-                # Check for success (reward > threshold at terminal step)
-                # Use terminated (not truncated) as success signal
-                terminated_mask = terminated.bool().squeeze(-1) if terminated.dim() > 1 else terminated.bool()
-                self._completed_successes += int(terminated_mask.sum().item())
-
                 self._episode_rewards[done_mask] = 0
                 self._episode_lengths[done_mask] = 0
+
+            # Extract real success metrics from env extras["log"]
+            # The env computes success via ProgressContext (peg within 5mm + 0.025 rad of goal)
+            # and passes it through extras["log"] on every step
+            log_info = infos.get("log", {}) if isinstance(infos, dict) else {}
+            if "Metrics/task_command/end_of_episode_success_rate" in log_info:
+                self._env_success_rate = log_info["Metrics/task_command/end_of_episode_success_rate"]
+            # Also grab per-reset-type success rates
+            for key, val in log_info.items():
+                if key.startswith("Metrics/"):
+                    self._env_metrics[key] = val
 
             # 5. Update policy if enough data
             if total_env_steps >= self.cfg.warmup_steps and len(self.buffer) >= self.cfg.batch_size:
@@ -243,7 +250,7 @@ class OffPolicyRunner:
 
                 avg_reward = sum(self._log_episode_rewards[-100:]) / max(len(self._log_episode_rewards[-100:]), 1)
                 avg_length = sum(self._log_episode_lengths[-100:]) / max(len(self._log_episode_lengths[-100:]), 1)
-                success_rate = self._completed_successes / max(self._completed_episodes, 1)
+                success_rate = self._env_success_rate
 
                 log_data = {
                     "env_steps": total_env_steps,
@@ -258,6 +265,8 @@ class OffPolicyRunner:
                     "success_rate": success_rate,
                     "completed_episodes": self._completed_episodes,
                 }
+                # Add per-task success rates from env
+                log_data.update(self._env_metrics)
 
                 logger.info(
                     f"Steps: {total_env_steps:>10d} | "
@@ -275,9 +284,8 @@ class OffPolicyRunner:
 
                     wandb.log(log_data, step=total_env_steps)
 
-                # Reset counters for success rate tracking per log interval
+                # Reset episode counter per log interval
                 self._completed_episodes = 0
-                self._completed_successes = 0
 
             # 7. Save checkpoint
             if total_env_steps % self.cfg.save_interval < self.env.num_envs and self.log_dir is not None:
