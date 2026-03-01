@@ -144,7 +144,11 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
 
     # Memory (replay buffer)
-    memory = RandomMemory(memory_size=100000, num_envs=env.num_envs, device=device)
+    # memory_size is PER ENV — total buffer = memory_size × num_envs
+    # For 16K envs: 64 × 16384 = ~1M total transitions
+    memory_size_per_env = max(64, 1000000 // env.num_envs)
+    memory = RandomMemory(memory_size=memory_size_per_env, num_envs=env.num_envs, device=device)
+    print(f"[INFO] Replay buffer: {memory_size_per_env} per env × {env.num_envs} envs = {memory_size_per_env * env.num_envs} total")
 
     # Models
     models = {
@@ -158,7 +162,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # SAC config
     cfg = SAC_DEFAULT_CONFIG.copy()
     cfg["gradient_steps"] = 1
-    cfg["batch_size"] = 4096
+    cfg["batch_size"] = min(4096, memory_size_per_env * env.num_envs // 4)
     cfg["discount_factor"] = 0.99
     cfg["polyak"] = 0.005
     cfg["actor_learning_rate"] = 3e-4
