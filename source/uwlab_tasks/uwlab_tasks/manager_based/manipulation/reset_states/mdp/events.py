@@ -1061,7 +1061,13 @@ class MultiResetManager(ManagerTermBase):
         base_paths: list[str],
         probs: list[float],
         success: str | None = None,
-        **kwargs,
+        adaptive: bool = False,
+        adaptive_zero_thresh: float = 0.01,
+        adaptive_mastered_thresh: float = 0.80,
+        adaptive_stuck_decay: float = 0.999,
+        adaptive_learning_boost: float = 1.005,
+        adaptive_mastered_decay: float = 0.995,
+        adaptive_min_prob: float = 0.05,
     ) -> None:
         if env_ids is None:
             env_ids = torch.arange(self.num_envs, device=self._env.device)
