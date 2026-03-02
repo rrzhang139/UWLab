@@ -106,6 +106,17 @@ gym.register(
     },
 )
 
+# Adaptive zone-based curriculum training
+gym.register(
+    id="OmniReset-Ur5eRobotiq2f85-RelCartesianOSC-State-Adaptive-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.rl_state_cfg:Ur5eRobotiq2f85RelCartesianOSCAdaptiveTrainCfg",
+        "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_cfg:Base_PPORunnerCfg",
+    },
+)
+
 # Near-goal only training (2 resets: PartiallyAssembled + Resting, both grasped)
 gym.register(
     id="OmniReset-Ur5eRobotiq2f85-RelCartesianOSC-State-NearGoal-v0",

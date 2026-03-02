@@ -265,6 +265,33 @@ class TrainEventCfg(BaseEventCfg):
 
 
 @configclass
+class AdaptiveTrainEventCfg(BaseEventCfg):
+    """Configuration for training events with adaptive zone-based curriculum."""
+
+    reset_from_reset_states = EventTerm(
+        func=task_mdp.MultiResetManager,
+        mode="reset",
+        params={
+            "base_paths": [
+                f"{UWLAB_CLOUD_ASSETS_DIR}/Datasets/Resets/ObjectPairs/ObjectAnywhereEEAnywhere",
+                f"{UWLAB_CLOUD_ASSETS_DIR}/Datasets/Resets/ObjectPairs/ObjectRestingEEGrasped",
+                f"{UWLAB_CLOUD_ASSETS_DIR}/Datasets/Resets/ObjectPairs/ObjectAnywhereEEGrasped",
+                f"{UWLAB_CLOUD_ASSETS_DIR}/Datasets/Resets/ObjectPairs/ObjectPartiallyAssembledEEGrasped",
+            ],
+            "probs": [0.25, 0.25, 0.25, 0.25],
+            "success": "env.reward_manager.get_term_cfg('progress_context').func.success",
+            "adaptive": True,
+            "adaptive_zero_thresh": 0.01,
+            "adaptive_mastered_thresh": 0.80,
+            "adaptive_stuck_decay": 0.999,
+            "adaptive_learning_boost": 1.005,
+            "adaptive_mastered_decay": 0.995,
+            "adaptive_min_prob": 0.05,
+        },
+    )
+
+
+@configclass
 class EvalEventCfg(BaseEventCfg):
     """Configuration for evaluation events."""
 
@@ -619,6 +646,30 @@ class Ur5eRobotiq2f85RelCartesianOSCTrainCfg(Ur5eRobotiq2f85RlStateCfg):
     """Training configuration for Relative Cartesian OSC action space."""
 
     events: TrainEventCfg = TrainEventCfg()
+    actions: Ur5eRobotiq2f85RelativeOSCAction = Ur5eRobotiq2f85RelativeOSCAction()
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.scene.robot = EXPLICIT_UR5E_ROBOTIQ_2F85.replace(prim_path="{ENV_REGEX_NS}/Robot")
+
+        self.events.randomize_robot_actuator_parameters = EventTerm(
+            func=task_mdp.randomize_operational_space_controller_gains,
+            mode="reset",
+            params={
+                "action_name": "arm",
+                "stiffness_distribution_params": (0.7, 1.3),
+                "damping_distribution_params": (0.9, 1.1),
+                "operation": "scale",
+                "distribution": "uniform",
+            },
+        )
+
+
+@configclass
+class Ur5eRobotiq2f85RelCartesianOSCAdaptiveTrainCfg(Ur5eRobotiq2f85RlStateCfg):
+    """Training configuration with adaptive zone-based curriculum for Relative Cartesian OSC action space."""
+
+    events: AdaptiveTrainEventCfg = AdaptiveTrainEventCfg()
     actions: Ur5eRobotiq2f85RelativeOSCAction = Ur5eRobotiq2f85RelativeOSCAction()
 
     def __post_init__(self):

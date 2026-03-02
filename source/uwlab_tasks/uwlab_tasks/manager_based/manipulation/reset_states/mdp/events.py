@@ -1045,6 +1045,15 @@ class MultiResetManager(ManagerTermBase):
 
         self.task_id = torch.randint(0, self.num_tasks, (self.num_envs,), device=self.device)
 
+        # Adaptive zone-based curriculum parameters
+        self._adaptive_enabled = cfg.params.get("adaptive", False)
+        self._zero_thresh = cfg.params.get("adaptive_zero_thresh", 0.01)
+        self._mastered_thresh = cfg.params.get("adaptive_mastered_thresh", 0.80)
+        self._stuck_decay = cfg.params.get("adaptive_stuck_decay", 0.999)
+        self._learning_boost = cfg.params.get("adaptive_learning_boost", 1.005)
+        self._mastered_decay = cfg.params.get("adaptive_mastered_decay", 0.995)
+        self._min_prob = cfg.params.get("adaptive_min_prob", 0.05)
+
     def __call__(
         self,
         env: ManagerBasedEnv,
@@ -1052,6 +1061,7 @@ class MultiResetManager(ManagerTermBase):
         base_paths: list[str],
         probs: list[float],
         success: str | None = None,
+        **kwargs,
     ) -> None:
         if env_ids is None:
             env_ids = torch.arange(self.num_envs, device=self._env.device)
@@ -1071,6 +1081,20 @@ class MultiResetManager(ManagerTermBase):
                     f"Metrics/task_{task_idx}_prob": self.probs[task_idx].item(),
                     f"Metrics/task_{task_idx}_normalized_prob": self.probs[task_idx].item(),
                 })
+
+        # Zone-based adaptive probability update
+        if self._adaptive_enabled and hasattr(self, 'success_monitor') and self.success_monitor.success_size.sum() > 0:
+            sr = self.success_monitor.get_success_rate()
+            for i in range(self.num_tasks):
+                s = sr[i].item()
+                if s < self._zero_thresh:
+                    self.probs[i] *= self._stuck_decay
+                elif s < self._mastered_thresh:
+                    self.probs[i] *= self._learning_boost
+                else:
+                    self.probs[i] *= self._mastered_decay
+            self.probs.clamp_(min=self._min_prob)
+            self.probs /= self.probs.sum()
 
         # Sample which dataset to use for each environment
         dataset_indices = torch.multinomial(self.probs, len(env_ids), replacement=True)
