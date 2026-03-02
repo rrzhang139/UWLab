@@ -1048,9 +1048,9 @@ class MultiResetManager(ManagerTermBase):
         # Adaptive zone-based curriculum parameters
         self._adaptive_enabled = cfg.params.get("adaptive", False)
         self._zero_thresh = cfg.params.get("adaptive_zero_thresh", 0.01)
-        self._mastered_thresh = cfg.params.get("adaptive_mastered_thresh", 0.80)
+        self._mastered_thresh = cfg.params.get("adaptive_mastered_thresh", 0.60)
         self._stuck_decay = cfg.params.get("adaptive_stuck_decay", 0.999)
-        self._learning_boost = cfg.params.get("adaptive_learning_boost", 1.005)
+        self._learning_boost = cfg.params.get("adaptive_learning_boost", 1.01)
         self._mastered_decay = cfg.params.get("adaptive_mastered_decay", 0.995)
         self._min_prob = cfg.params.get("adaptive_min_prob", 0.05)
 
@@ -1063,9 +1063,9 @@ class MultiResetManager(ManagerTermBase):
         success: str | None = None,
         adaptive: bool = False,
         adaptive_zero_thresh: float = 0.01,
-        adaptive_mastered_thresh: float = 0.80,
+        adaptive_mastered_thresh: float = 0.60,
         adaptive_stuck_decay: float = 0.999,
-        adaptive_learning_boost: float = 1.005,
+        adaptive_learning_boost: float = 1.01,
         adaptive_mastered_decay: float = 0.995,
         adaptive_min_prob: float = 0.05,
     ) -> None:
